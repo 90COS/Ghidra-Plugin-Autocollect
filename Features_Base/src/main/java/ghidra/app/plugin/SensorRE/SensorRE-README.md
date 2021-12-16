@@ -1,6 +1,6 @@
-## Notes: This ia a minimal push at this time as this branch only contains the based code and not all dependencies.
-## Hence, in order to run **EventCollectorForSensorREPlugin.java**, the following steps need to be carried out.
-## Full Ghidra and **EventCollectorForSensorREPlugin** can be clone from [github](git@github.com:kmai-github/ghidra.git)
+#### Notes: This ia a minimal push at this time as this branch only contains the based code and not all dependencies.
+#### Hence, in order to run **EventCollectorForSensorREPlugin.java**, the following steps need to be carried out.
+#### Full Ghidra and **EventCollectorForSensorREPlugin** can be clone from [github](git@github.com:kmai-github/ghidra.git)
 
 -In Eclipse, create a new package **ghidra.app.plugin.sensorRE** in **Features Base/src/main/java**
 -Add **EventCollectorForSensorREPlugin.java** and **EventCollectorForSensorREPluginDockerProvider.java**
