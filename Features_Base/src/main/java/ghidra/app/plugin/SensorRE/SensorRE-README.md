@@ -1,4 +1,4 @@
-#### Notes: This ia a minimal push at this time as this branch only contains the based code and not all dependencies. Full Ghidra and **EventCollectorForSensorREPlugin** can be clone from: [github](https://github.com/kmai-github/ghidra)
+#### Notes: This ia a minimal repo at this time as this branch only contains the based code and not all dependencies. Full Ghidra and **EventCollectorForSensorREPlugin** can be clone from: [github](https://github.com/kmai-github/ghidra)
 #### Hence, in order to run **EventCollectorForSensorREPlugin.java**, the following steps need to be carried out.
 
 
