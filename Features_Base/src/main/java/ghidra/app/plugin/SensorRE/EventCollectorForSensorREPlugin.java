@@ -27,14 +27,14 @@ import ghidra.util.Msg;
 import ghidra.util.datastruct.IntObjectHashtable;
 
 /**
-  * Debug Plugin to show domain object change events.
+  * Plugin to show domain object change events.
   */
 //@formatter:off
 @PluginInfo(
 	status = PluginStatus.RELEASED,
 	packageName = DeveloperPluginPackage.NAME,
 	category = PluginCategoryNames.TESTING,
-	shortDescription = "Capture domain object events",
+	shortDescription = "Capture domain object (binary file being analyzed) events",
 	description = "This plugin captures domain object events " +
 			"as they are generated, then save these events to a json file that " + 
 			" can be transmitted to an RPC server for SensorRE client. The maximum number of messages shown is " +
@@ -50,14 +50,6 @@ public class EventCollectorForSensorREPlugin extends Plugin implements DomainObj
 	
 	
 	private ArrayList<String> eventJsonArray; //Contains captured events in json format
-	/*
-	 * Future implementation will ask user for file name
-	 * to store events as json objects
-	 */
-//	String jsonOutFileName = "/home/scada/eventCollectorJsonFile.json"; 
-//	File outFile; 
-//	FileWriter writer; 
-
 	private int count;
 	private int callBack;
 
@@ -134,7 +126,6 @@ public class EventCollectorForSensorREPlugin extends Plugin implements DomainObj
 	/**
 	 * Set the font for the text area; font property will show up on the
 	 * plugin property sheet.
-	
 	 */
 	public void setFont(Font font) {
 		eventCollectorDocker.setFont(font);
@@ -147,25 +138,15 @@ public class EventCollectorForSensorREPlugin extends Plugin implements DomainObj
 	private void update(DomainObjectChangedEvent event) throws Exception{
 		
 		EventCollectorObj eventCollectorObj = null; //To store individual event
-
-		
-		/*
-		 * Since there can be multiple events with multiple calls to update()
-		 * Need to clear the event array each time to prevent writing duplications
-		 * to file
-		 */
-		//eventJsonArray.clear();
-		
-		/*
-		 * Open/reopen file to write events to
-		 */
-		//writer = new FileWriter(outFile, true);
-			
 		/*
 		 * To support creation/read/write json object
 		 */
 		Gson gson = new GsonBuilder().setPrettyPrinting().create();
 		
+		/*
+		 * Since DomainObjectChangedEvent object can hold multiple events,
+		 * as such, need to make sure that we process all of the events reported
+		 */
 		for (int i = 0; i < event.numRecords(); i++) {
 			String s = null;
 			String start = null;
@@ -213,7 +194,7 @@ public class EventCollectorForSensorREPlugin extends Plugin implements DomainObj
 			}
 			
 			/*
-			 * Time to display event to console and write to file in json format
+			 * Time to display events to console and write to file in json format
 			 * But first, need to catch all other cases in which eventCollectorObj is still null,
 			 * so we will have to construct event change based only on basic data such as
 			 * eventType, old/new value, and of course the source program/binary
@@ -293,94 +274,90 @@ public class EventCollectorForSensorREPlugin extends Plugin implements DomainObj
 	 * Note, this class definition should be updated/changed as needed to meet
 	 * SensorRE requirements
 	 */
-	class EventCollectorObj {
-		private String time;
-		private String eventType;
-		private String oldValue;
-		private String newValue;
-		private String sourceProgram;
-		private String other;
-		
-		//Default constructor
-		public EventCollectorObj() {
-			time=null;
-			eventType=null;
-			oldValue=null;
-			newValue=null;
-			sourceProgram=null;
-			other=null;
-		}
-		
-		public EventCollectorObj(String time, String eventType, String oldValue, String newValue, String sourceProgram, String other) {
-			this.time=time;
-			this.eventType=eventType;
-			this.oldValue=oldValue;
-			this.newValue=newValue;
-			this.sourceProgram=sourceProgram;
-			this.other=other;
-		}
-		
-		
-		/*
-		 * Setters and getters
-		 */
-		public String getTime() {
-			return time;
-		}
-
-		public void setTime(String time) {
-			this.time = time;
-		}
-
-		public String getEventType() {
-			return eventType;
-		}
-
-		public void setEventType(String eventType) {
-			this.eventType = eventType;
-		}
-
-		public String getOldValue() {
-			return oldValue;
-		}
-
-		public void setOldValue(String oldValue) {
-			this.oldValue = oldValue;
-		}
-
-		public String getNewValue() {
-			return newValue;
-		}
-
-		public void setNewValue(String newValue) {
-			this.newValue = newValue;
-		}
-
-		public String getSourceProgram() {
-			return sourceProgram;
-		}
-
-		public void setSourceProgram(String sourceProgram) {
-			this.sourceProgram = sourceProgram;
-		}
-
-		public String getOther() {
-			return other;
-		}
-
-		public void setOther(String other) {
-			this.other = other;
-		}
-		
-
-		@Override
-		public String toString() {
-			return "EventCollectorObj [time=" + time + ", eventType=" + eventType + ", oldValue=" + oldValue
-					+ ", newValue=" + newValue + ", sourceProgram=" + sourceProgram + ", other=" + other + "]";
-		}
-
-		
-	
-		
-	}
+//	class EventCollectorObj {
+//		private String time;
+//		private String eventType;
+//		private String oldValue;
+//		private String newValue;
+//		private String sourceProgram;
+//		private String other;
+//		
+//		//Default constructor
+//		public EventCollectorObj() {
+//			time=null;
+//			eventType=null;
+//			oldValue=null;
+//			newValue=null;
+//			sourceProgram=null;
+//			other=null;
+//		}
+//		
+//		public EventCollectorObj(String time, String eventType, String oldValue, String newValue, String sourceProgram, String other) {
+//			this.time=time;
+//			this.eventType=eventType;
+//			this.oldValue=oldValue;
+//			this.newValue=newValue;
+//			this.sourceProgram=sourceProgram;
+//			this.other=other;
+//		}
+//		
+//		
+//		/*
+//		 * Setters and getters
+//		 */
+//		public String getTime() {
+//			return time;
+//		}
+//
+//		public void setTime(String time) {
+//			this.time = time;
+//		}
+//
+//		public String getEventType() {
+//			return eventType;
+//		}
+//
+//		public void setEventType(String eventType) {
+//			this.eventType = eventType;
+//		}
+//
+//		public String getOldValue() {
+//			return oldValue;
+//		}
+//
+//		public void setOldValue(String oldValue) {
+//			this.oldValue = oldValue;
+//		}
+//
+//		public String getNewValue() {
+//			return newValue;
+//		}
+//
+//		public void setNewValue(String newValue) {
+//			this.newValue = newValue;
+//		}
+//
+//		public String getSourceProgram() {
+//			return sourceProgram;
+//		}
+//
+//		public void setSourceProgram(String sourceProgram) {
+//			this.sourceProgram = sourceProgram;
+//		}
+//
+//		public String getOther() {
+//			return other;
+//		}
+//
+//		public void setOther(String other) {
+//			this.other = other;
+//		}
+//		
+//
+//		@Override
+//		public String toString() {
+//			return "EventCollectorObj [time=" + time + ", eventType=" + eventType + ", oldValue=" + oldValue
+//					+ ", newValue=" + newValue + ", sourceProgram=" + sourceProgram + ", other=" + other + "]";
+//		}
+//	}
 }

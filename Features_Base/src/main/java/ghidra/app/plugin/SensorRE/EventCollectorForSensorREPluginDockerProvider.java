@@ -3,102 +3,41 @@ package ghidra.app.plugin.sensorRE;
 
 import java.awt.BorderLayout;
 import java.awt.FlowLayout;
-//import java.awt.Color;
-//import java.awt.Component;
-//import java.awt.Container;
-//import java.awt.Cursor;
-//import java.awt.Dimension;
-//import java.awt.FlowLayout;
 import java.awt.Font;
 import java.awt.Color;
-//import java.awt.FontMetrics;
 import java.awt.GridLayout;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-//import java.awt.KeyboardFocusManager;
-//import java.awt.Point;
-//import java.awt.Rectangle;
-//import java.awt.event.ActionEvent;
-//import java.awt.event.ActionListener;
-//import java.awt.event.ComponentAdapter;
-//import java.awt.event.ComponentEvent;
-//import java.awt.event.ContainerEvent;
-//import java.awt.event.ContainerListener;
-//import java.awt.event.KeyEvent;
-//import java.awt.event.MouseEvent;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.util.ArrayList;
-//import java.util.HashMap;
-//import java.util.HashSet;
 import java.util.List;
-//import java.util.Map;
-//import java.util.Set;
-
 import javax.swing.*;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
-//import javax.swing.event.ListSelectionEvent;
-//import javax.swing.event.ListSelectionListener;
-//import javax.swing.event.MouseInputAdapter;
-
-//import org.apache.commons.lang3.StringUtils;
-//import org.jdesktop.animation.timing.Animator;
-//import org.jdesktop.animation.timing.TimingTargetAdapter;
-
 import docking.ActionContext;
-//import docking.DialogComponentProviderPopupActionManager;
-//import docking.DockingActionProxy;
-//import docking.DockingDialog;
-//import docking.DockingWindowManager;
-//import docking.TaskScheduler;
-//import docking.Tool;
 import docking.WindowPosition;
-//import docking.action.ActionContextProvider;
 import docking.action.DockingAction;
-//import docking.action.DockingActionIf;
 import docking.action.ToolBarData;
-//import docking.actions.KeyBindingUtils;
-//import docking.event.mouse.GMouseListenerAdapter;
-//import docking.help.HelpService;
-//import docking.menu.DialogToolbarButton;
-//import docking.util.AnimationUtils;
+import docking.widgets.OptionDialog;
 import docking.widgets.filechooser.GhidraFileChooser;
-//import docking.widgets.label.GDHtmlLabel;
-//import docking.widgets.label.GDLabel;
-//import docking.widgets.list.GList;
-//import docking.wizard.IllegalPanelStateException;
-//import docking.wizard.PanelManager;
-//import docking.wizard.WizardManager;
-//import docking.wizard.WizardPanel;
-//import ghidra.framework.client.RepositoryServerAdapter;
-//import ghidra.framework.model.ServerInfo;
 import ghidra.framework.plugintool.ComponentProviderAdapter;
 import ghidra.framework.plugintool.PluginTool;
-//import ghidra.util.HelpLocation;
-//import ghidra.util.MessageType;
+import ghidra.util.HTMLUtilities;
 import ghidra.util.Msg;
-import ghidra.util.StatusListener;
-//import ghidra.util.StatusListener;
-//import ghidra.util.Swing;
-//import ghidra.util.SystemUtilities;
-//import ghidra.util.exception.AssertException;
-import ghidra.util.layout.MiddleLayout;
-//import ghidra.util.task.Task;
-//import ghidra.util.task.TaskListener;
-//import ghidra.util.task.TaskMonitor;
-//import ghidra.util.task.TaskMonitorComponent;
 import resources.ResourceManager;
+import ghidra.app.script.AskDialog;
 import ghidra.framework.client.ClientUtil;
-//import utility.function.Callback;
 import ghidra.framework.client.RepositoryServerAdapter;
 import ghidra.framework.main.*;
 import ghidra.framework.model.ServerInfo;
 
-//import java.awt.event.*;
 
-
+/*
+ * Synopsis: A docker provider for SensorRE plugin
+ * This docker will be docker at the bottom location of the main Ghidra window
+ */
 
 public class EventCollectorForSensorREPluginDockerProvider extends ComponentProviderAdapter {
 	final static int LIMIT = 300;
@@ -123,7 +62,6 @@ public class EventCollectorForSensorREPluginDockerProvider extends ComponentProv
 	/*
 	 * All RPC server connection data members
 	 */
-	//private RepositoryChooser rpcServerChooser;
 	private ServerInfoComponent serverInfoComponent;
 	private String serverName;
 	private int serverPort;
@@ -138,7 +76,10 @@ public class EventCollectorForSensorREPluginDockerProvider extends ComponentProv
 	private ArrayList<String> eventJsonArray; //Contains captured events in json format
 	private FileWriter writer;
 	
-		
+	
+	/*
+	 * Constructor
+	 */
 	public EventCollectorForSensorREPluginDockerProvider(PluginTool tool, ArrayList<String> eventJsonArray, String name) {
 		super(tool, name, name);
 		/*
@@ -148,14 +89,14 @@ public class EventCollectorForSensorREPluginDockerProvider extends ComponentProv
 		serverPort = 11300;
 		jsonFileName = null;
 		this.eventJsonArray = eventJsonArray;
-		
-		//serverInfo = new ServerInfo(serverName, serverPort);
 		eventList = new ArrayList<>();
-		
 		textArea = new JTextArea(10, 80);
 		textArea.setEditable(false);
 		scrollPane = new JScrollPane(textArea);
 
+		/*
+		 * Docker GUI
+		 */
 		clearWindowContentAction();
 		saveEventsToJsonFile();
 		obtainRPCServerIPandPort();
@@ -169,8 +110,6 @@ public class EventCollectorForSensorREPluginDockerProvider extends ComponentProv
 	/*
 	 * ****************************************************************************
 	 * This section handles SensorRE "Clear console" action.
-	 * Note, this action only clear what user see on the console and
-	 * not the actual event list
 	 * ****************************************************************************
 	 */
 	private void clearWindowContentAction() {
@@ -192,8 +131,16 @@ public class EventCollectorForSensorREPluginDockerProvider extends ComponentProv
 	 * Supported method of clearWindowContentAction()
 	 */
 	private void clear() {
+
 		textArea.setText("");
 		eventList.clear();
+		
+//		if (OptionDialog.showYesNoCancelDialog(tool.getActiveWindow(), "Clear console and Event Buffer",
+//				"Do you want to clear the event buffer as well?") == OptionDialog.YES_OPTION) {
+//			eventJsonArray.clear();
+//			displayEvent("Event json array now has " + eventJsonArray.size() + " events\n");
+//		}
+		
 	}
 	/*
 	 * ********************************************************************************
@@ -279,29 +226,33 @@ public class EventCollectorForSensorREPluginDockerProvider extends ComponentProv
 	 * ********************************************************************************
 	 */
 	
+	
+	/*
+	 * ********************************************************************************
+	 * BEGINNING of obtaining RPC server  handler section
+	 * ********************************************************************************
+	 */
 	private void obtainRPCServerIPandPort() {
-		
-				
 		
 		RPCServer = new DockingAction("Upload events to RPC server", getName()) {
 			@Override
 			public void actionPerformed(ActionContext context) {
-				//Msg.info(this, "Before call showEventDemo()");
 				buildServerInfoPanel();
-				//Msg.info(this, "After call showEventDemo()");
 			}
 		};
 
 		RPCServer.markHelpUnnecessary();
 		RPCServer.setEnabled(true);
-		//ImageIcon icon = ResourceManager.loadImage("images/network-receive.png");
 		ImageIcon icon = UPLOAD_ICON;
 		RPCServer.setToolBarData(new ToolBarData(icon));
 		addLocalAction(RPCServer);
 	}
 
 
-		   
+	
+	/*
+	 * Construct GUI to obtain server info	   
+	 */
 	private void buildServerInfoPanel() {
 		
 	    mainFrame = new JFrame("Specify SensorRE RPC Server");
@@ -394,17 +345,17 @@ public class EventCollectorForSensorREPluginDockerProvider extends ComponentProv
 		
 	}
 	
+	/*
+	 * User entered server info, hence activate clear button
+	 */
 	private void serverInfoChanged() {
-//		setStatusText("");
-//		setOkEnabled(false);
-//		listModel.clear();
-		//boolean isValidInfo = serverInfoComponent.isValidInformation();
 		clearButton.setEnabled(true);
-		//clearButton.setEnabled(isValidInfo);
-		//Msg.debug(this, "Server address: " + serverInfoComponent.getServerName() + " and port: " + serverInfoComponent.getPortNumber());
 	}
 
 	
+	/*
+	 * Display eventStr to plugin text box
+	 */
 	void displayEvent(String eventStr) {
 
 		eventList.add(eventStr);
