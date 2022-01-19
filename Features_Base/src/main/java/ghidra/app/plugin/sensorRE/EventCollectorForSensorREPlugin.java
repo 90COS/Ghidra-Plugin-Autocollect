@@ -1,17 +1,17 @@
 package ghidra.app.plugin.sensorRE;
 
 import java.awt.Font;
-import java.io.File;
-import java.io.FileWriter;
-import java.io.IOException;
+//import java.io.File;
+//import java.io.FileWriter;
+//import java.io.IOException;
 import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.Date;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
-import com.google.gson.JsonElement;
-import com.google.gson.stream.JsonWriter;
+//import com.google.gson.JsonElement;
+//import com.google.gson.stream.JsonWriter;
 
 import docking.help.Help;
 import docking.help.HelpService;
@@ -21,6 +21,7 @@ import ghidra.app.plugin.PluginCategoryNames;
 import ghidra.framework.model.*;
 import ghidra.framework.plugintool.*;
 import ghidra.framework.plugintool.util.PluginStatus;
+import ghidra.program.model.address.Address;
 import ghidra.program.model.listing.Program;
 import ghidra.program.util.*;
 import ghidra.util.Msg;
@@ -47,11 +48,11 @@ public class EventCollectorForSensorREPlugin extends Plugin implements DomainObj
 	private Program currentProgram;
 	private EventCollectorForSensorREPluginDockerProvider eventCollectorDocker;
 	private IntObjectHashtable<String> eventHt;
-	
-	
 	private ArrayList<String> eventJsonArray; //Contains captured events in json format
+	private EventCollectorObj eventCollectorObj; 
 	private int count;
 	private int callBack;
+	private Gson gson;
 
 	/**
 	  * Constructor
@@ -62,6 +63,8 @@ public class EventCollectorForSensorREPlugin extends Plugin implements DomainObj
 
 		eventHt = new IntObjectHashtable<>();
 		eventJsonArray = new ArrayList<>();
+		gson = new GsonBuilder().setPrettyPrinting().create();
+		eventCollectorObj = null;
 		count = 0;
 		callBack = 0;
 		eventCollectorDocker = new EventCollectorForSensorREPluginDockerProvider(tool, eventJsonArray, getName());
@@ -72,7 +75,8 @@ public class EventCollectorForSensorREPlugin extends Plugin implements DomainObj
 	}
 
 	/**
-	 * Put event processing code here.
+	 * Plug in events as they come.
+	 * @param event: plug in generated events
 	 */
 	@Override
 	public void processEvent(PluginEvent event) {
@@ -106,12 +110,8 @@ public class EventCollectorForSensorREPlugin extends Plugin implements DomainObj
 	@Override
 	public void domainObjectChanged(DomainObjectChangedEvent ev) {
 		if (tool != null && eventCollectorDocker.isVisible()) {
-			try {
-				update(ev);
-				Msg.debug(this, "domainObjectChanged called " + ++callBack + " times for event with " + ev.numRecords() + " records!" );
-			} catch (Exception e) {
-				e.printStackTrace();
-			}
+			Msg.debug(this, "domainObjectChanged callback " + ++callBack + "X for event with " + ev.numRecords() + " records!" );
+			update(ev);
 		}
 	}
 
@@ -135,87 +135,107 @@ public class EventCollectorForSensorREPlugin extends Plugin implements DomainObj
 	/**
 	 * Apply the updates that are in the change event.
 	 */
-	private void update(DomainObjectChangedEvent event) throws Exception{
+	private void update(DomainObjectChangedEvent event) {
 		
-		EventCollectorObj eventCollectorObj = null; //To store individual event
-		/*
-		 * To support creation/read/write json object
-		 */
-		Gson gson = new GsonBuilder().setPrettyPrinting().create();
+		String eventString;
+		String eventName;
+		String startAddr;
+		String endAddr;
+		String oldValue;
+		String newValue;
+		String affectedObj;
+		String dateStr;
+		int eventType;
 		
+			
 		/*
 		 * Since DomainObjectChangedEvent object can hold multiple events,
 		 * as such, need to make sure that we process all of the events reported
 		 */
 		for (int i = 0; i < event.numRecords(); i++) {
-			String s = null;
-			String start = null;
-			String end = null;
-			String oldValue = null;
-			String newValue = null;
-			String affectedObj = null;
-			String dateStr = new Date() + ": ";
-			int eventType = 0;
-			
+			eventString = null;
+			eventName = null;
+			startAddr = null;
+			endAddr = null;
+			oldValue = null;
+			newValue = null;
+			affectedObj = null;
+			dateStr = new Date().toString();
+			eventType = 0;
+			eventCollectorObj = null;
 
 			DomainObjectChangeRecord docr = event.getChangeRecord(i);
 			eventType = docr.getEventType();
+			
+			
+			/*
+			 * Is this event related to any specific program/binary changes such as
+			 * address and/or offset of the program being analyzed?
+			 * ProgramChangeRecord has 3 private data members:
+			 * Address start;
+			 * Address end;
+			 * Object affectedObj; 
+			 */
 			if (docr instanceof ProgramChangeRecord) {
 				ProgramChangeRecord record = (ProgramChangeRecord) docr;
-
 				try {
-					start = "" + record.getStart();
-					end = "" + record.getEnd();
+					startAddr = "" + record.getStart();
+					endAddr = "" + record.getEnd();
 					oldValue = "" + record.getOldValue();
 					newValue = "" + record.getNewValue();
 					affectedObj = "" + record.getObject();
+					
+					
+					eventCollectorObj = new EventCollectorObj(dateStr, 
+	                            getEventName(eventType), 
+	                            ProgramChangeRecord.class.getSimpleName(),
+	                            oldValue, newValue, startAddr, endAddr, event.getSource().toString(), 
+	                            "***Program change event***" );
+					
 				}
 				catch (Exception e) {
 					eventCollectorObj = new EventCollectorObj(dateStr, 
 							                                    getEventName(eventType), 
-							                                    null, null, event.getSource().toString(), 
+							                                    ProgramChangeRecord.class.getSimpleName(),
+							                                    null, null, null, null, event.getSource().toString(), 
 							                                    "=> *** Exception: Event data is not available ***" );
 				}
-			}
-			else if (docr instanceof CodeUnitPropertyChangeRecord) {
+			}else if (docr instanceof CodeUnitPropertyChangeRecord) {
 				CodeUnitPropertyChangeRecord record = (CodeUnitPropertyChangeRecord) docr;
 				eventCollectorObj = new EventCollectorObj(dateStr, getEventName(eventType), 
-						                                    oldValue, newValue, event.getSource().toString(),
-						                                    " (" + eventType + ") ==> propertyName = " + record.getPropertyName() + ", code unit address = " + record.getAddress());
+															CodeUnitPropertyChangeRecord.class.getSimpleName(),
+						                                    oldValue, newValue, null, null, event.getSource().toString(),
+						                                    " (" + eventType + ") propertyName: " 
+						                                    + record.getPropertyName() 
+						                                    + "; code unit address: " + record.getAddress().toString());
+			}else if (docr instanceof DomainObjectChangeRecord) {
+				DomainObjectChangeRecord record = (DomainObjectChangeRecord) docr;
+				eventCollectorObj = new EventCollectorObj(dateStr, getEventName(eventType), 
+															DomainObjectChangeRecord.class.getSimpleName(),
+						                                    record.getOldValue().toString(), record.getNewValue().toString(), 
+						                                    null, null, event.getSource().toString(),
+						                                    "SubEvent Type:" + record.getSubEventType());
+			}else{//To catch all other unknown cases
+				eventCollectorObj = new EventCollectorObj(dateStr, getEventName(eventType, DomainObject.class), 
+														docr.getClass().getSimpleName(),
+														docr.getOldValue().toString(), docr.getNewValue().toString(), 
+							                            null, null,
+							                            event.getSource().toString(),
+														"Unknown event type");
 			}
-			else {
-				s = getEventName(eventType, DomainObject.class);
-				if (s != null) {
-					eventCollectorObj = new EventCollectorObj(dateStr, s, 
-							                                    oldValue, newValue, 
-							                                    event.getSource().toString(),
-							                                    null);
-				}
-			}
-			
+		
 			/*
-			 * Time to display events to console and write to file in json format
-			 * But first, need to catch all other cases in which eventCollectorObj is still null,
-			 * so we will have to construct event change based only on basic data such as
-			 * eventType, old/new value, and of course the source program/binary
+			 * Time to display to plugin console and save to array
+			 * for writing to file later when user requests
+			 * In the case for ProgramChangeRecord, there are times when
+			 * oldValue and newValue are null, should we include those events?
 			 */
-			if (eventCollectorObj == null) {
-				eventCollectorObj = new EventCollectorObj(dateStr, 
-						                                    getEventName(eventType), 
-						                                    oldValue, 
-						                                    newValue, 
-						                                    event.getSource().toString(), null);
-				s = gson.toJson(eventCollectorObj) + "\n";
-				eventJsonArray.add(s);
-				if (oldValue != null && !oldValue.equals(newValue)) {
-					eventCollectorDocker.displayEvent(s);
-				}
-			}else {
-				s = gson.toJson(eventCollectorObj) + "\n";
-				eventJsonArray.add(s);
-				eventCollectorDocker.displayEvent(s);
-			}
-		}
+			//if (oldValue != null && !oldValue.equals(newValue)) {
+				eventString = gson.toJson(eventCollectorObj) + "\n";
+				eventCollectorDocker.displayEvent(eventString);
+				eventJsonArray.add(eventString);
+			//}
+		}//For loop
 	
 	}
 

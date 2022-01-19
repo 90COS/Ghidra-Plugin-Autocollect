@@ -98,8 +98,8 @@ public class EventCollectorForSensorREPluginDockerProvider extends ComponentProv
 		 * Docker GUI
 		 */
 		clearWindowContentAction();
-		saveEventsToJsonFile();
-		obtainRPCServerIPandPort();
+		saveEventsToJsonFileAction();
+		obtainRPCServerIPandPortAction();
 		
 		setIcon(PLUGIN_ICON);
 		setDefaultWindowPosition(WindowPosition.BOTTOM);
@@ -116,7 +116,7 @@ public class EventCollectorForSensorREPluginDockerProvider extends ComponentProv
 		clearAction = new DockingAction("Clear events in Console", getName()) {
 			@Override
 			public void actionPerformed(ActionContext context) {
-				clear();
+				clearDockerTextArea();
 			}
 		};
 
@@ -130,7 +130,7 @@ public class EventCollectorForSensorREPluginDockerProvider extends ComponentProv
 	/*
 	 * Supported method of clearWindowContentAction()
 	 */
-	private void clear() {
+	private void clearDockerTextArea() {
 
 		textArea.setText("");
 		eventList.clear();
@@ -158,7 +158,7 @@ public class EventCollectorForSensorREPluginDockerProvider extends ComponentProv
 	 * to user selected file  
 	 * ********************************************************************************
 	 */
-	private void saveEventsToJsonFile() {
+	private void saveEventsToJsonFileAction() {
 		saveEventToFile = new DockingAction("Save Events to JSON file", getName()) {
 			@Override
 			public void actionPerformed(ActionContext context) {
@@ -229,10 +229,10 @@ public class EventCollectorForSensorREPluginDockerProvider extends ComponentProv
 	
 	/*
 	 * ********************************************************************************
-	 * BEGINNING of obtaining RPC server  handler section
+	 * BEGINNING of obtaining RPC server  handler section, although utilizing Ghidra RMI
 	 * ********************************************************************************
 	 */
-	private void obtainRPCServerIPandPort() {
+	private void obtainRPCServerIPandPortAction() {
 		
 		RPCServer = new DockingAction("Upload events to RPC server", getName()) {
 			@Override
@@ -390,7 +390,7 @@ public class EventCollectorForSensorREPluginDockerProvider extends ComponentProv
 	 */
 	@Override
 	public void componentHidden() {
-		clear();
+		clearDockerTextArea();
 	}
 
 	public Font getFont() {
